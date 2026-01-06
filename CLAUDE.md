@@ -2,6 +2,13 @@
 
 This is a template repository for Android projects with Claude Code skills.
 
+## Package Naming Convention
+
+All Android apps created from this template must use package names starting with `com.kroslabs`. For example:
+- `com.kroslabs.myapp`
+- `com.kroslabs.apps.calculator`
+- `com.kroslabs.tools.filemanager`
+
 ## Available Skills
 
 ### /build-workflow
@@ -27,5 +34,5 @@ Creates a GitHub Actions workflow for building and uploading Android APKs. The w
 
 **Usage:**
 Run `/build-workflow` and provide:
-- Package name (e.g., `com.example.myapp`)
+- Package name (must start with `com.kroslabs`, e.g., `com.kroslabs.myapp`)
 - App name (e.g., `My App`)
