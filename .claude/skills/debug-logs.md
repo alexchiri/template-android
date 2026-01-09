@@ -108,12 +108,10 @@ object DebugLogger {
 package {{PACKAGE_NAME}}.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -203,7 +201,6 @@ fun DebugLogsScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState())
                             .padding(horizontal = 8.dp, vertical = 2.dp)
                     )
                 }
@@ -496,8 +493,7 @@ class DebugLogsActivity : AppCompatActivity() {
     android:fontFamily="monospace"
     android:paddingHorizontal="8dp"
     android:paddingVertical="2dp"
-    android:textSize="11sp"
-    android:scrollHorizontally="true" />
+    android:textSize="11sp" />
 ```
 
 **Create `app/src/main/res/menu/menu_debug_logs.xml`:**

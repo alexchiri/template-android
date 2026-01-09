@@ -78,6 +78,7 @@ Creates a debug logs screen and adds comprehensive debug logging throughout the 
 
 - In-app log viewer with color-coded log levels (verbose, debug, info, warn, error)
 - Timestamps for each log entry
+- Log lines wrap for easier reading (no horizontal scrolling)
 - Copy logs to clipboard functionality
 - Clear logs functionality
 - Auto-scroll to latest logs
