@@ -74,7 +74,7 @@ Run `/build-workflow` and provide:
 
 ### /debug-logs
 
-Creates a debug logs screen accessible from the app's settings screen where all application logs can be viewed. Features include:
+Creates a debug logs screen and adds comprehensive debug logging throughout the app. Features include:
 
 - In-app log viewer with color-coded log levels (verbose, debug, info, warn, error)
 - Timestamps for each log entry
@@ -83,15 +83,26 @@ Creates a debug logs screen accessible from the app's settings screen where all 
 - Auto-scroll to latest logs
 - Support for both Jetpack Compose and XML Views
 - Thread-safe logging with a DebugLogger singleton
+- **Automatic logging integration across the entire app**
+- **1-hour log retention** - Logs older than 1 hour are automatically pruned to prevent filling device storage
 
 **Components Created:**
 - `DebugLogger` - Singleton wrapper around `android.util.Log` that captures all logs
 - `DebugLogsScreen` (Compose) or `DebugLogsActivity` (XML) - UI for viewing logs
 - Required layout and menu resources (XML Views only)
 
+**Logging Added To:**
+- Activity/Fragment lifecycle methods (onCreate, onResume, onPause, onDestroy)
+- ViewModel initialization and data loading
+- Network/API calls (request start, success, and failures)
+- User interactions (button clicks, form submissions)
+- Data operations (database reads/writes)
+- Repository methods (cache hits/misses, network fetches)
+- Navigation events
+
 **Usage:**
 Run `/debug-logs` and provide:
 - Package name (must start with `com.kroslabs`, e.g., `com.kroslabs.myapp`)
 - UI framework preference (Jetpack Compose or XML Views)
 
-After running the skill, add a "Debug Logs" option to your settings screen and replace `Log.*` calls with `DebugLogger.*` to capture logs in the viewer.
+The skill will create the debug logging infrastructure, replace existing `Log.*` calls with `DebugLogger.*`, and add comprehensive logging throughout the app's functionality.

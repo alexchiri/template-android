@@ -48,12 +48,22 @@ enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR }
 
 object DebugLogger {
     private const val MAX_LOGS = 1000
+    private const val MAX_AGE_MS = 60 * 60 * 1000L // 1 hour in milliseconds
 
     private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
     val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
 
     private fun addLog(entry: LogEntry) {
-        _logs.value = (_logs.value + entry).takeLast(MAX_LOGS)
+        val now = System.currentTimeMillis()
+        val cutoffTime = now - MAX_AGE_MS
+
+        // Filter out logs older than 1 hour and add the new entry
+        _logs.value = (_logs.value.filter { it.timestamp > cutoffTime } + entry).takeLast(MAX_LOGS)
+    }
+
+    private fun pruneOldLogs() {
+        val cutoffTime = System.currentTimeMillis() - MAX_AGE_MS
+        _logs.value = _logs.value.filter { it.timestamp > cutoffTime }
     }
 
     fun v(tag: String, message: String, throwable: Throwable? = null) {
@@ -86,6 +96,7 @@ object DebugLogger {
     }
 
     fun exportLogs(): String {
+        pruneOldLogs() // Prune before exporting
         return _logs.value.joinToString("\n") { it.formattedMessage }
     }
 }
@@ -236,9 +247,13 @@ enum class LogLevel { VERBOSE, DEBUG, INFO, WARN, ERROR }
 
 object DebugLogger {
     private const val MAX_LOGS = 1000
+    private const val MAX_AGE_MS = 60 * 60 * 1000L // 1 hour in milliseconds
 
     private val _logs = CopyOnWriteArrayList<LogEntry>()
-    val logs: List<LogEntry> get() = _logs.toList()
+    val logs: List<LogEntry> get() {
+        pruneOldLogs()
+        return _logs.toList()
+    }
 
     private val listeners = mutableListOf<() -> Unit>()
 
@@ -254,7 +269,16 @@ object DebugLogger {
         listeners.forEach { it() }
     }
 
+    private fun pruneOldLogs() {
+        val cutoffTime = System.currentTimeMillis() - MAX_AGE_MS
+        val oldLogs = _logs.filter { it.timestamp <= cutoffTime }
+        _logs.removeAll(oldLogs)
+    }
+
     private fun addLog(entry: LogEntry) {
+        // Prune logs older than 1 hour
+        pruneOldLogs()
+
         _logs.add(entry)
         while (_logs.size > MAX_LOGS) {
             _logs.removeAt(0)
@@ -293,6 +317,7 @@ object DebugLogger {
     }
 
     fun exportLogs(): String {
+        pruneOldLogs() // Prune before exporting
         return _logs.joinToString("\n") { it.formattedMessage }
     }
 }
@@ -506,12 +531,155 @@ class DebugLogsActivity : AppCompatActivity() {
     android:parentActivityName=".ui.SettingsActivity" />
 ```
 
-3. After creating the files, instruct the user to:
+3. **Add debug logging throughout the app:**
+
+   After creating the DebugLogger infrastructure, scan the entire codebase and add comprehensive debug logging:
+
+   **a. Replace existing Log.* calls:**
+   - Search for all `android.util.Log.*` calls in the codebase
+   - Replace them with equivalent `DebugLogger.*` calls
+   - Update imports accordingly
+
+   **b. Add logging to Activities/Fragments lifecycle:**
+   ```kotlin
+   class MyActivity : AppCompatActivity() {
+       private val TAG = "MyActivity"
+
+       override fun onCreate(savedInstanceState: Bundle?) {
+           super.onCreate(savedInstanceState)
+           DebugLogger.d(TAG, "onCreate called")
+           // ...
+       }
+
+       override fun onResume() {
+           super.onResume()
+           DebugLogger.d(TAG, "onResume called")
+       }
+
+       override fun onPause() {
+           super.onPause()
+           DebugLogger.d(TAG, "onPause called")
+       }
+
+       override fun onDestroy() {
+           super.onDestroy()
+           DebugLogger.d(TAG, "onDestroy called")
+       }
+   }
+   ```
+
+   **c. Add logging to ViewModels:**
+   ```kotlin
+   class MyViewModel : ViewModel() {
+       private val TAG = "MyViewModel"
+
+       init {
+           DebugLogger.d(TAG, "ViewModel initialized")
+       }
+
+       fun loadData() {
+           DebugLogger.d(TAG, "loadData() called")
+           // ... implementation
+           DebugLogger.i(TAG, "Data loaded successfully: $result")
+       }
+
+       override fun onCleared() {
+           super.onCleared()
+           DebugLogger.d(TAG, "ViewModel cleared")
+       }
+   }
+   ```
+
+   **d. Add logging to network/API calls:**
+   ```kotlin
+   suspend fun fetchData(): Result<Data> {
+       DebugLogger.d(TAG, "fetchData() - Starting API request")
+       return try {
+           val response = api.getData()
+           DebugLogger.i(TAG, "fetchData() - Success: ${response.size} items received")
+           Result.success(response)
+       } catch (e: Exception) {
+           DebugLogger.e(TAG, "fetchData() - Failed", e)
+           Result.failure(e)
+       }
+   }
+   ```
+
+   **e. Add logging to user interactions:**
+   ```kotlin
+   Button(onClick = {
+       DebugLogger.d(TAG, "Submit button clicked")
+       viewModel.submitForm()
+   }) {
+       Text("Submit")
+   }
+   ```
+
+   **f. Add logging to data operations:**
+   ```kotlin
+   fun saveToDatabase(item: Item) {
+       DebugLogger.d(TAG, "saveToDatabase() - Saving item: ${item.id}")
+       try {
+           database.insert(item)
+           DebugLogger.i(TAG, "saveToDatabase() - Item saved successfully")
+       } catch (e: Exception) {
+           DebugLogger.e(TAG, "saveToDatabase() - Failed to save item", e)
+           throw e
+       }
+   }
+   ```
+
+   **g. Add logging to repositories:**
+   ```kotlin
+   class UserRepository(private val api: ApiService, private val db: UserDao) {
+       private val TAG = "UserRepository"
+
+       suspend fun getUser(id: String): User {
+           DebugLogger.d(TAG, "getUser() - Fetching user: $id")
+
+           // Try cache first
+           val cached = db.getUser(id)
+           if (cached != null) {
+               DebugLogger.d(TAG, "getUser() - Found in cache")
+               return cached
+           }
+
+           // Fetch from network
+           DebugLogger.d(TAG, "getUser() - Cache miss, fetching from network")
+           val user = api.getUser(id)
+           db.insert(user)
+           DebugLogger.i(TAG, "getUser() - Fetched and cached user: ${user.name}")
+           return user
+       }
+   }
+   ```
+
+   **h. Add logging to navigation:**
+   ```kotlin
+   fun navigateToDetails(itemId: String) {
+       DebugLogger.d(TAG, "Navigating to details screen for item: $itemId")
+       navController.navigate("details/$itemId")
+   }
+   ```
+
+4. **Logging best practices to follow:**
+   - Use consistent TAG naming (class name)
+   - Log method entry with parameters (excluding sensitive data)
+   - Log method exit with results/status
+   - Log errors with full exception context
+   - Use appropriate log levels:
+     - `VERBOSE`: Very detailed tracing
+     - `DEBUG`: Development debugging info
+     - `INFO`: Important state changes, success events
+     - `WARN`: Recoverable issues, unexpected but handled situations
+     - `ERROR`: Failures, exceptions, critical issues
+   - **Never log sensitive data** (passwords, tokens, PII)
+
+5. **After adding logging, instruct the user:**
    - Add a "Debug Logs" option to their settings screen that navigates to the debug logs screen
-   - Replace `android.util.Log` calls with `DebugLogger` calls throughout the app to capture logs
    - Note: In production builds, they may want to disable the DebugLogger or hide the menu option
 
-4. Provide example usage:
+6. Provide example usage:
    ```kotlin
    // Instead of:
    Log.d("MyTag", "Some debug message")
