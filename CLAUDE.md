@@ -44,6 +44,20 @@ val requestBody = """
 
 Store the API key securely (e.g., in encrypted SharedPreferences or Android Keystore) and never hardcode it in the source code.
 
+## Spec ID Extraction
+
+Before running the `/build-workflow` skill, search for a `SPEC.md` file in the project folder. If found, look for a spec ID in an HTML comment at the very top of the file:
+
+```html
+<!-- SPEC-ID: my-fitness-app-clx2ab3c -->
+```
+
+If a spec ID is found:
+1. Extract the slug value (e.g., `my-fitness-app-clx2ab3c`)
+2. Use this slug when running the `/build-workflow` skill - it will be passed as the `slug` parameter in the upload call
+
+The spec ID format is: `<!-- SPEC-ID: <slug> -->` where `<slug>` is typically a kebab-case identifier.
+
 ## Available Skills
 
 ### /build-workflow
@@ -57,7 +71,7 @@ Creates a GitHub Actions workflow for building and uploading Android APKs. The w
 - Automatic semantic version bumping
 - Git tagging and committing version changes
 - Keystore-based APK signing
-- Upload to app hosting service
+- Upload to app hosting service (includes optional `slug` parameter from SPEC.md)
 
 **Required Secrets:**
 - `KEYSTORE_BASE64` - Base64 encoded keystore file
@@ -71,6 +85,7 @@ Creates a GitHub Actions workflow for building and uploading Android APKs. The w
 Run `/build-workflow` and provide:
 - Package name (must start with `com.kroslabs`, e.g., `com.kroslabs.myapp`)
 - App name (e.g., `My App`)
+- Slug (optional) - If a `SPEC.md` file exists with a spec ID, extract and pass it as the `slug` parameter in the upload call
 
 ### /debug-logs
 
